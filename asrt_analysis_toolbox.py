@@ -128,12 +128,7 @@ def calc_overall_RT(df):
 # ezt teszteld le!!!! adott szemely nyers es standard RT-jet plottold hisztogramra és nezd meg hogy egyezik-e a ketto
 def standardize(df, method='z-score'):
     n=0
-
-#TODO
-#/home/noemi/Dropbox/Elteto_N/python_tools/learning_strategy_functions.py:57: SettingWithCopyWarning: 
-#A value is trying to be set on a copy of a slice from a DataFrame.
-#Try using .loc[row_indexer,col_indexer] = value instead
-
+    
     df['standardized_RT'] = np.nan
     print('megvan az ures oszlop')
     subjects = df.Subject.unique()
