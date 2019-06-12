@@ -33,6 +33,72 @@ def input_formatting(datafile):
 
     return df
 
+def add_anticipation_error_column(df):
+
+    df=df.replace(r'\s+', np.nan, regex=True)
+
+    df.isnull().sum()
+    df.ix[:5, :5] # check
+
+    pcode=pd.read_csv('PCODE.csv', sep=';')
+
+    error_type=[]
+    index=[]
+
+    # replace numbers with corresponding letters in event and triplet data (so that it will be unified and will map onto PCODE)
+
+    df['event'] = df['event'].replace({1:'z', 2:'c', 3:'b', 4:'m'})
+    df['TripC'] = df['TripC'].replace({1:'z', 2:'c', 3:'b', 4:'m'})
+
+    for row in df.itertuples():	
+        high_triplets=[]
+        p_i = int(row[15]) - 1 #index of the pcode, in order to refer to it in the pcode dataframe (where the 0th row is the first pcode)
+        high_triplets.append(pcode['H1'][p_i])
+        high_triplets.append(pcode['H2'][p_i])
+        high_triplets.append(pcode['H3'][p_i])
+        high_triplets.append(pcode['H4'][p_i]) #get the four mappings for high freq triplets
+            
+        ## CHRONOS preproc: delete all chronos specific columns and replace 1 to z, 2 to c, 4 to b, 5 to m in firstRESP
+        prediction = None		
+        for triplet in high_triplets:
+            if row[16][0] == triplet[0]: # we search for the high freq triplet mapping which has a first element matching the i-2th event 			
+                # row[16]: TripC
+                prediction = triplet[2] # the prediction will be the third element of the high freq mapping
+        
+        if row[11] == prediction: # if the response is the prediction according to the high frq triplet mapping
+        # row[11]:firstRESP
+            error_type.append('pred')
+        else:
+            error_type.append('nonpred')
+
+    # add the error type column to the df
+
+    error_type=pd.Series(error_type)
+    df['error_type'] = error_type.values
+    df['error_type_numeric'] = df['error_type'].replace({'pred':1, 'nonpred':0})
+
+    # check
+
+    errors=0
+    pred_errors=0
+    nonpred_errors=0
+    for row in df.itertuples():
+        if row[15] != 'XXX' and row[10] == 0:
+            errors+=1
+            if row[28] == 'pred':
+            # row[28]: error type
+                pred_errors+=1
+            if row[28] == 'nonpred':
+                nonpred_errors+=1
+
+    print 'errors: ' + str(errors)
+    print 'predictive errors: ' + str(pred_errors)
+    print 'non-predictive errors: ' + str(nonpred_errors)
+    print 'The number of errors equals the sum of pred and nonpred errors: '+str(errors==pred_errors+nonpred_errors)
+
+    return df
+
+
 def get_highs(pcode):
     table_=pd.read_csv('PCODE.csv', sep=',')
     high_triplets=[]
